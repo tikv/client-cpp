@@ -1,27 +1,31 @@
 # TiKV Client for C++
 
-This library is the TiKV client for C++; it only supports synchronous API so far.
+TiKV client for C++. So far, it only supports synchronous API.
 
 It's built on top of 
 [TiKV Client in Rust](https://github.com/tikv/client-rust) via [cxx](https://github.com/dtolnay/cxx). 
 
 This client is still in the stage of prove-of-concept and under heavy development.
 
-# compilation process
-
-## all
+## Build
 
 ```bash
-make all
+cargo install cxxbridge-cmd --force --version 1.0.18
+make
 ```
 
-## build static lib
+Then the library will be in `target/debug/libtikv_client.a`.
+
+Otherwise, you can build release version by the following. The library will be in
+`target/release/libtikv_client.a`.
 
 ```bash
-make build-lib
+make release
 ```
 
-## output target
+## Run example
 
-- libtikv_client.a : static lib
-- tikv-test: execute file for test
+```bash
+tiup playground
+make run-example
+```

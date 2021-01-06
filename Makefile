@@ -1,40 +1,52 @@
 pes_parent_dir:=$(shell pwd)/$(lastword $(MAKEFILE_LIST))
 cur_makefile_path := $(shell dirname $(pes_parent_dir))
 
-all: build-lib build-test
+all: build build-example target/tikv-example
 
-build-test: target/tikv-test 
+build: pre-build target/debug/libtikv_client.a
 
-build-lib: pre-build target/cxx/tikv_client_glue.o target/cxx/tikv_client_cpp.o target/cxx/libtikv_client.a 
+release: pre-build target/release/libtikv_client.a
 
-pre-build: target/cxx target/cxx/libtikv_client_rust.a target/cxx/tikv_client_glue.cc target/cxx/tikv_client_glue.h
+pre-build: target/tikv_client_glue.cc include/tikv_client_glue.h
 
 clean:
 	cargo clean
 
-run: target/tikv-test
-	RUST_BACKTRACE=1 $(cur_makefile_path)/target/tikv-test
+run-example: target/tikv-example
+	$(cur_makefile_path)/target/tikv-example
 
-target/cxx:
-	mkdir -p $(cur_makefile_path)/target/cxx
+target/tikv-example: target/debug/libtikv_client.a example/main.cpp
+	c++ $(cur_makefile_path)/example/main.cpp -o $(cur_makefile_path)/target/tikv-example -std=c++17 -g -I$(cur_makefile_path)/include -L$(cur_makefile_path)/target/debug -ltikv_client -lpthread -ldl -lssl -lcrypto
 
-target/tikv-test: target/cxx/libtikv_client.a example/main.cpp
-	c++ $(cur_makefile_path)/example/main.cpp -o $(cur_makefile_path)/target/tikv-test -std=c++17 -g -I$(cur_makefile_path)/target/cxx -I$(cur_makefile_path)/include -L$(cur_makefile_path)/target/cxx -ltikv_client -lpthread -ldl -lssl -lcrypto
 
-target/cxx/libtikv_client.a: target/cxx/libtikv_client_rust.a target/cxx/tikv_client_glue.o target/cxx/tikv_client_cpp.o
-	cd $(cur_makefile_path)/target/cxx && cp libtikv_client_rust.a libtikv_client.a && ar cr libtikv_client.a tikv_client_cpp.o tikv_client_glue.o
+target/tikv_client_glue.cc: src/lib.rs
+	cxxbridge $(cur_makefile_path)/src/lib.rs > $(cur_makefile_path)/target/tikv_client_glue.cc
 
-target/cxx/tikv_client_cpp.o: src/tikv_client.cpp
-	c++ -c $(cur_makefile_path)/src/tikv_client.cpp -o $(cur_makefile_path)/target/cxx/tikv_client_cpp.o -std=c++17 -g -I$(cur_makefile_path)/target/cxx -I$(cur_makefile_path)/include
+include/tikv_client_glue.h: src/lib.rs
+	cxxbridge $(cur_makefile_path)/src/lib.rs --header > $(cur_makefile_path)/include/tikv_client_glue.h
 
-target/cxx/tikv_client_glue.o: target/cxx/tikv_client_glue.cc
-	c++ -c $(cur_makefile_path)/target/cxx/tikv_client_glue.cc -o $(cur_makefile_path)/target/cxx/tikv_client_glue.o -std=c++17 -I$(cur_makefile_path)/target/cxx
 
-target/cxx/libtikv_client_rust.a: src/lib.rs
-	cargo build && mv $(cur_makefile_path)/target/debug/libtikv_client_rust.a $(cur_makefile_path)/target/cxx
+target/debug/libtikv_client.a: target/debug/libtikv_client_rust.a target/debug/tikv_client_glue.o target/debug/tikv_client_cpp.o
+	cp $(cur_makefile_path)/target/debug/libtikv_client_rust.a $(cur_makefile_path)/target/debug/libtikv_client.a && ar cr $(cur_makefile_path)/target/debug/libtikv_client.a $(cur_makefile_path)/target/debug/tikv_client_cpp.o $(cur_makefile_path)/target/debug/tikv_client_glue.o
 
-target/cxx/tikv_client_glue.cc: src/lib.rs
-	cxxbridge $(cur_makefile_path)/src/lib.rs > $(cur_makefile_path)/target/cxx/tikv_client_glue.cc
+target/debug/tikv_client_cpp.o: src/tikv_client.cpp
+	c++ -c $(cur_makefile_path)/src/tikv_client.cpp -o $(cur_makefile_path)/target/debug/tikv_client_cpp.o -std=c++17 -g -I$(cur_makefile_path)/include
 
-target/cxx/tikv_client_glue.h: src/lib.rs
-	cxxbridge $(cur_makefile_path)/src/lib.rs --header > $(cur_makefile_path)/target/cxx/tikv_client_glue.h
+target/debug/tikv_client_glue.o: target/tikv_client_glue.cc
+	c++ -c $(cur_makefile_path)/target/tikv_client_glue.cc -o $(cur_makefile_path)/target/debug/tikv_client_glue.o -std=c++17
+
+target/debug/libtikv_client_rust.a: src/lib.rs
+	cargo build
+
+
+target/release/libtikv_client.a: target/release/libtikv_client_rust.a target/release/tikv_client_glue.o target/release/tikv_client_cpp.o
+	cp $(cur_makefile_path)/target/release/libtikv_client_rust.a $(cur_makefile_path)/target/release/libtikv_client.a && ar cr $(cur_makefile_path)/target/release/libtikv_client.a $(cur_makefile_path)/target/release/tikv_client_cpp.o $(cur_makefile_path)/target/release/tikv_client_glue.o
+
+target/release/tikv_client_cpp.o: src/tikv_client.cpp
+	c++ -O3 -c $(cur_makefile_path)/src/tikv_client.cpp -o $(cur_makefile_path)/target/release/tikv_client_cpp.o -std=c++17 -g -I$(cur_makefile_path)/include
+
+target/release/tikv_client_glue.o: target/tikv_client_glue.cc
+	c++ -O3 -c $(cur_makefile_path)/target/tikv_client_glue.cc -o $(cur_makefile_path)/target/release/tikv_client_glue.o -std=c++17
+
+target/release/libtikv_client_rust.a: src/lib.rs
+	cargo build --release

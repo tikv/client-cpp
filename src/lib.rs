@@ -1,11 +1,11 @@
+use core::panic;
 use std::ops;
 
 use anyhow::Result;
 use cxx::{CxxString, CxxVector};
 use futures::executor::block_on;
-use tikv_client::{self};
 
-use ffi::*;
+use self::ffi::*;
 
 #[cxx::bridge]
 mod ffi {
@@ -242,12 +242,14 @@ fn to_bound_range(
     let start_bound = match start_bound {
         Bound::Included => ops::Bound::Included(start.as_bytes().to_vec()),
         Bound::Excluded => ops::Bound::Excluded(start.as_bytes().to_vec()),
-        _ => ops::Bound::Unbounded,
+        Bound::Unbounded => ops::Bound::Unbounded,
+        _ => panic!("unexpected bound"),
     };
     let end_bound = match end_bound {
         Bound::Included => ops::Bound::Included(end.as_bytes().to_vec()),
         Bound::Excluded => ops::Bound::Excluded(end.as_bytes().to_vec()),
-        _ => ops::Bound::Unbounded,
+        Bound::Unbounded => ops::Bound::Unbounded,
+        _ => panic!("unexpected bound"),
     };
     tikv_client::BoundRange::from((start_bound, end_bound))
 }

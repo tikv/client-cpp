@@ -23,10 +23,8 @@ public:
     std::vector<KvPair> batch_get_for_update(const std::vector<std::string> &keys);
     std::vector<KvPair> scan(const std::string &start, Bound start_bound, const std::string &end, Bound end_bound, std::uint32_t limit);
     std::vector<std::string> scan_keys(const std::string &start, Bound start_bound, const std::string &end, Bound end_bound, std::uint32_t limit);
-    bool key_may_exist(const std::string &key); 
     void put(const std::string &key, const std::string &value);
     void batch_put(const std::vector<KvPair> &kvs);
-    bool merge(const std::string &key, const std::string &value);
     void remove(const std::string &key);
     void commit();
 private:

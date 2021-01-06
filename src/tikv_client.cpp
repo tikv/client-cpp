@@ -92,14 +92,6 @@ std::vector<std::string> Transaction::scan_keys(const std::string &start, Bound 
     return result;
 }
 
-bool Transaction::key_may_exist(const std::string &key) {
-    auto val = transaction_get_for_update(*_txn, key);
-    if (val.is_none) {  // key is not exist
-        return false;
-    }
-    return true;
-}
-
 void Transaction::put(const std::string &key, const std::string &value) {
     transaction_put(*_txn, key, value);
 }
@@ -109,17 +101,6 @@ void Transaction::batch_put(const std::vector<KvPair> &kvs) {
         transaction_put(*_txn, iter->key, iter->value);
     } 
 }
-
-bool Transaction::merge(const std::string &key, const std::string &value) {
-    auto val = transaction_get_for_update(*_txn, key);
-    if (val.is_none) {  // key is not exist
-        return false;
-    }
-    std::string new_value = std::string{val.value.begin(), val.value.end()} + value;
-    transaction_put(*_txn, key, new_value);
-    return true; 
-}
-
 
 void Transaction::remove(const std::string &key) {
     transaction_delete(*_txn, key);
