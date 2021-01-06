@@ -1,6 +1,6 @@
 # TiKV Client for C++
 
-This library is the TiKV client for C++; it only supports synchronous API so far.
+TiKV client for C++. So far, it only supports synchronous API.
 
 It's built on top of 
 [TiKV Client in Rust](https://github.com/tikv/client-rust) via [cxx](https://github.com/dtolnay/cxx). 
