@@ -1,0 +1,12 @@
+{
+    "files.associations": {
+        "*.sc": "scala",
+        "array": "cpp",
+        "*.tcc": "cpp",
+        "functional": "cpp",
+        "istream": "cpp",
+        "tuple": "cpp",
+        "utility": "cpp",
+        "memory": "cpp"
+    }
+}

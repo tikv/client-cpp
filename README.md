@@ -7,21 +7,25 @@ It's built on top of
 
 This client is still in the stage of prove-of-concept and under heavy development.
 
-# compilation process
-
-## all
+## Build
 
 ```bash
-make all
+cargo install cxxbridge-cmd --force --version 1.0.18
+make
 ```
 
-## build static lib
+Then the library will be in `target/debug/libtikv_client.a`.
+
+Otherwise, you can build release version by the following. The library will be in
+`target/release/libtikv_client.a`.
 
 ```bash
-make build-lib
+make release
 ```
 
-## output target
+## Run example
 
-- libtikv_client.a : static lib
-- tikv-test: execute file for test
+```bash
+tiup playground
+make run-example
+```
