@@ -1,3 +1,5 @@
+// Copyright 2021 TiKV Project Authors. Licensed under Apache-2.0.
+
 #ifndef _TIKV_CLIENT_H_
 #define _TIKV_CLIENT_H_ 
 
