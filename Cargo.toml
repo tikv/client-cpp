@@ -12,4 +12,5 @@ crate-type = ["staticlib"]
 anyhow = "1"
 cxx = "=1.0.18"
 futures = "0.3"
+env_logger = "0.8"
 tikv-client = { git = "https://github.com/tikv/client-rust.git", rev = "72ab9b3" }
