@@ -8,6 +8,7 @@ build: pre-build target/debug/libtikv_client.a
 release: pre-build target/release/libtikv_client.a
 
 pre-build: target/tikv_client_glue.cc include/tikv_client_glue.h
+	mkdir target
 
 clean:
 	cargo clean
