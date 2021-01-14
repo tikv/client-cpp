@@ -105,7 +105,7 @@ struct Transaction {
 
 fn transaction_client_new(pd_endpoints: &CxxVector<CxxString>) -> Result<Box<TransactionClient>> {
     env_logger::init();
-    
+
     let pd_endpoints = pd_endpoints
         .iter()
         .map(|str| str.to_str().map(ToOwned::to_owned))
@@ -118,7 +118,7 @@ fn transaction_client_new(pd_endpoints: &CxxVector<CxxString>) -> Result<Box<Tra
 
 fn transaction_client_begin(client: &TransactionClient) -> Result<Box<Transaction>> {
     Ok(Box::new(Transaction {
-        inner: block_on(client.inner.begin())?,
+        inner: block_on(client.inner.begin_optimistic())?,
     }))
 }
 
@@ -145,15 +145,18 @@ fn transaction_get_for_update(
     transaction: &mut Transaction,
     key: &CxxString,
 ) -> Result<OptionalValue> {
-    match block_on(transaction.inner.get_for_update(key.as_bytes().to_vec()))? {
-        Some(value) => Ok(OptionalValue {
-            is_none: false,
-            value,
-        }),
-        None => Ok(OptionalValue {
+    let value = block_on(transaction.inner.get_for_update(key.as_bytes().to_vec()))?;
+    // TODO: Fix client rust to distinguish empty value and key not exist
+    if value.is_empty() {
+        Ok(OptionalValue {
             is_none: true,
             value: Vec::new(),
-        }),
+        })
+    } else {
+        Ok(OptionalValue {
+            is_none: false,
+            value,
+        })
     }
 }
 
@@ -172,17 +175,18 @@ fn transaction_batch_get(
 }
 
 fn transaction_batch_get_for_update(
-    transaction: &mut Transaction,
-    keys: &CxxVector<CxxString>,
+    _transaction: &mut Transaction,
+    _keys: &CxxVector<CxxString>,
 ) -> Result<Vec<KvPair>> {
-    let keys = keys.iter().map(|key| key.as_bytes().to_vec());
-    let kv_pairs = block_on(transaction.inner.batch_get_for_update(keys))?
-        .map(|tikv_client::KvPair(key, value)| KvPair {
-            key: key.into(),
-            value,
-        })
-        .collect();
-    Ok(kv_pairs)
+    // let keys = keys.iter().map(|key| key.as_bytes().to_vec());
+    // let kv_pairs = block_on(transaction.inner.batch_get_for_update(keys))?
+    //     .map(|tikv_client::KvPair(key, value)| KvPair {
+    //         key: key.into(),
+    //         value,
+    //     })
+    //     .collect();
+    // Ok(kv_pairs)
+    unimplemented!("batch_get_for_update is not working properly so far.")
 }
 
 fn transaction_scan(
