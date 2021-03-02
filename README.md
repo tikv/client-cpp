@@ -10,6 +10,7 @@ This client is still in the stage of prove-of-concept and under heavy developmen
 ## Build
 
 ```bash
+# cxxbridge-cmd 1.0.18 requires rustc 1.48+ and c++11 or newer
 cargo install cxxbridge-cmd --force --version 1.0.18
 make
 ```
