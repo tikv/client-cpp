@@ -1,14 +1,18 @@
 pes_parent_dir:=$(shell pwd)/$(lastword $(MAKEFILE_LIST))
 cur_makefile_path := $(shell dirname $(pes_parent_dir))
 
-all: build build-example target/tikv-example
+all: build target/tikv-example
 
 build: pre-build target/debug/libtikv_client.a
 
 release: pre-build target/release/libtikv_client.a
 
-pre-build: target/tikv_client_glue.cc include/tikv_client_glue.h
-	mkdir target
+.PHONY: directories
+
+directories:
+	mkdir -p target
+
+pre-build: directories target/tikv_client_glue.cc include/tikv_client_glue.h
 
 clean:
 	cargo clean
