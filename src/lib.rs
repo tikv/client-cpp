@@ -145,18 +145,15 @@ fn transaction_get_for_update(
     transaction: &mut Transaction,
     key: &CxxString,
 ) -> Result<OptionalValue> {
-    let value = block_on(transaction.inner.get_for_update(key.as_bytes().to_vec()))?;
-    // TODO: Fix client rust to distinguish empty value and key not exist
-    if value.is_empty() {
-        Ok(OptionalValue {
-            is_none: true,
-            value: Vec::new(),
-        })
-    } else {
-        Ok(OptionalValue {
+    match block_on(transaction.inner.get_for_update(key.as_bytes().to_vec()))? {
+        Some(value) => Ok(OptionalValue {
             is_none: false,
             value,
-        })
+        }),
+        None => Ok(OptionalValue {
+            is_none: true,
+            value: Vec::new(),
+        }),
     }
 }
 
