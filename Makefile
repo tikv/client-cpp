@@ -21,7 +21,7 @@ run-example: target/tikv-example
 	RUST_LOG=debug $(cur_makefile_path)/target/tikv-example
 
 target/tikv-example: target/debug/libtikv_client.a example/main.cpp
-	c++ $(cur_makefile_path)/example/main.cpp -o $(cur_makefile_path)/target/tikv-example -std=c++17 -g -I$(cur_makefile_path)/include -L$(cur_makefile_path)/target/debug -ltikv_client -lpthread -ldl -lssl -lcrypto
+	c++ $(cur_makefile_path)/example/main.cpp -o $(cur_makefile_path)/target/tikv-example -std=c++17 -g -I$(cur_makefile_path)/include -L$(cur_makefile_path)/target/debug -ltikv_client -lpthread -ldl -L/usr/local/opt/openssl/lib -I/usr/local/opt/openssl/include -lssl -lcrypto
 
 
 target/tikv_client_glue.cc: src/lib.rs

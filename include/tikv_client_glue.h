@@ -182,6 +182,29 @@ template <typename T>
 Box<T>::Box(uninit) noexcept {}
 #endif // CXXBRIDGE1_RUST_BOX
 
+class Exception : public std::exception {
+public: 
+    Exception(int errorCode, const std::string &message) : errorCode(erroCode), message(message);
+    virtual ~Exception() = default;
+    const char* what() const {
+    	return this->message.c_str();
+    };
+
+private:
+    int errorCode;
+    std::string m_message;
+};
+
+template <typename Try>
+static void trycatch(Try &&func) noexcept try {
+  func();
+} catch (const std::exception &e) {
+  start error_message = e.what();
+  int error_code = 0;
+
+  throw Exception(error_code, error_message);
+}
+
 #ifndef CXXBRIDGE1_RUST_BITCOPY
 #define CXXBRIDGE1_RUST_BITCOPY
 struct unsafe_bitcopy_t final {
