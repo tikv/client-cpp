@@ -12,8 +12,67 @@ KvPair::KvPair(std::string &&key, std::string &&value)
     , value(std::move(value))
 {}
 
+ffi::KvPair KvPair::to_ffi() {
+    ffi::KvPair f_pair;
+    f_pair.key.reserve(key.size());
+    for (const auto &c : this->key) {
+        f_pair.key.emplace_back(static_cast<std::uint8_t>(c));
+    }
+    f_pair.value.reserve(value.size());
+    for (const auto &c : this->value) {
+        f_pair.value.emplace_back(static_cast<std::uint8_t>(c));
+    }
+    return f_pair;
+}
+
 TransactionClient::TransactionClient(const std::vector<std::string> &pd_endpoints):
     _client(tikv_client_glue::transaction_client_new(pd_endpoints)) {}
+
+RawKVClient::RawKVClient(const std::vector<std::string> &pd_endpoints):
+    _client(tikv_client_glue::raw_client_new(pd_endpoints)) {}
+
+std::optional<std::string> RawKVClient::get(const std::string &key, const std::uint32_t timeout) {
+    auto val = tikv_client_glue::raw_get(*_client,key,timeout);
+    if (val.is_none) {
+        return std::nullopt;
+    } else {
+        return std::string{val.value.begin(), val.value.end()};
+    }
+}
+
+void RawKVClient::put(const std::string &key, const std::string &value, const std::uint32_t timeout) {
+    tikv_client_glue::raw_put(*_client,key,value,timeout);
+}
+
+void RawKVClient::batch_put(const std::vector<KvPair> &kv_pairs, const std::uint32_t timeout) {
+    std::vector<ffi::KvPair> pairs;
+    pairs.reserve(kv_pairs.size());
+    for (auto pair: kv_pairs) {
+        pairs.emplace_back(pair.to_ffi());
+    }
+    tikv_client_glue::raw_batch_put(*_client,pairs,timeout);
+}
+
+std::vector<KvPair> RawKVClient::scan(const std::string &startKey, const std::string &endKey, std::uint32_t limit, const std::uint32_t timeout){
+    auto kv_pairs = tikv_client_glue::raw_scan(*_client,startKey,endKey,limit,timeout);  
+    std::vector<KvPair> result;
+    result.reserve(kv_pairs.size());
+    for (auto iter = kv_pairs.begin(); iter != kv_pairs.end(); ++iter) {
+        result.emplace_back(
+            std::string{(iter->key).begin(), (iter->key).end()},
+            std::string{(iter->value).begin(), (iter->value).end()}
+        );
+    }
+    return result;
+}
+
+void RawKVClient::del(const std::string &key, const std::uint32_t timeout) {
+    tikv_client_glue::raw_delete(*_client,key,timeout);
+}
+
+void RawKVClient::del_range(const std::string &start_key,const std::string &end_key, const std::uint32_t timeout) {
+    tikv_client_glue::raw_delete_range(*_client,start_key,end_key,timeout);
+}
 
 Transaction TransactionClient::begin() {
     return Transaction(transaction_client_begin(*_client));
