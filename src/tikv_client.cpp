@@ -66,11 +66,11 @@ std::vector<KvPair> RawKVClient::scan(const std::string &startKey, const std::st
     return result;
 }
 
-void RawKVClient::del(const std::string &key, const std::uint32_t timeout) {
+void RawKVClient::remove(const std::string &key, const std::uint32_t timeout) {
     tikv_client_glue::raw_delete(*_client,key,timeout);
 }
 
-void RawKVClient::del_range(const std::string &start_key,const std::string &end_key, const std::uint32_t timeout) {
+void RawKVClient::remove_range(const std::string &start_key,const std::string &end_key, const std::uint32_t timeout) {
     tikv_client_glue::raw_delete_range(*_client,start_key,end_key,timeout);
 }
 

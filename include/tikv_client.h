@@ -49,8 +49,8 @@ public:
     std::optional<std::string> get(const std::string &key,const std::uint32_t timeout);
     void put(const std::string &key, const std::string &value, const std::uint32_t timeout);
     void batch_put(const std::vector<KvPair> &kvs, const std::uint32_t timeout);
-    void del(const std::string &key, const std::uint32_t timeout);
-    void del_range(const std::string &start_key, const std::string &end_key, const std::uint32_t timeout);
+    void remove(const std::string &key, const std::uint32_t timeout);
+    void remove_range(const std::string &start_key, const std::string &end_key, const std::uint32_t timeout);
     std::vector<KvPair> scan(const std::string &startKey, const std::string &endKey, std::uint32_t limit, const std::uint32_t timeout);
 
 private:

@@ -29,7 +29,7 @@ int main() {
 
     // delete [k3,k5), so [k1,k6) should be [k1,k3) + [k5,k6)
     std::cout<<"scan[\"k1\",\"k6\") after delete:"<<std::endl;
-    client.del_range("k3","k5",kTimeoutMs);
+    client.remove_range("k3","k5",kTimeoutMs);
     kv_pairs = client.scan("k1","k6", kLimit ,kTimeoutMs);
     for (auto iter = kv_pairs.begin(); iter != kv_pairs.end(); ++iter) {
         std::cout << "(" << iter->key << ": " << iter->value  << ") ";
