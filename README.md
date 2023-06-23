@@ -28,5 +28,8 @@ make release
 
 ```bash
 tiup playground nightly
-make run-example
+# run rawkv example
+make run-raw-example
+# run txnkv example
+make run-txn-example        
 ```

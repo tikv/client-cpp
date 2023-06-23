@@ -17,12 +17,17 @@ pre-build: directories target/tikv_client_glue.cc include/tikv_client_glue.h
 clean:
 	cargo clean
 
-run-example: target/tikv-example
-	RUST_LOG=debug $(cur_makefile_path)/target/tikv-example
+run-raw-example: target/tikv-raw-example
+	RUST_LOG=debug $(cur_makefile_path)/target/tikv-raw-example
 
-target/tikv-example: target/debug/libtikv_client.a example/main.cpp
-	c++ $(cur_makefile_path)/example/main.cpp -o $(cur_makefile_path)/target/tikv-example -std=c++17 -g -I$(cur_makefile_path)/include -L$(cur_makefile_path)/target/debug -ltikv_client -lpthread -ldl -lssl -lcrypto
+run-txn-example: target/tikv-txn-example 
+	RUST_LOG=debug $(cur_makefile_path)/target/tikv-txn-example
 
+target/tikv-raw-example: target/debug/libtikv_client.a example/raw.cpp
+	c++ $(cur_makefile_path)/example/raw.cpp -o $(cur_makefile_path)/target/tikv-raw-example -std=c++17 -g -I$(cur_makefile_path)/include -L$(cur_makefile_path)/target/debug -ltikv_client -lpthread -ldl -lssl -lcrypto
+
+target/tikv-txn-example: target/debug/libtikv_client.a example/txn.cpp
+	c++ $(cur_makefile_path)/example/txn.cpp -o $(cur_makefile_path)/target/tikv-txn-example -std=c++17 -g -I$(cur_makefile_path)/include -L$(cur_makefile_path)/target/debug -ltikv_client -lpthread -ldl -lssl -lcrypto
 
 target/tikv_client_glue.cc: src/lib.rs
 	cxxbridge $(cur_makefile_path)/src/lib.rs > $(cur_makefile_path)/target/tikv_client_glue.cc

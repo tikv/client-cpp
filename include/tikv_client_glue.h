@@ -573,12 +573,15 @@ Vec<T>::Vec(unsafe_bitcopy_t, const Vec &bits) noexcept : repr(bits.repr) {}
 } // namespace rust
 
 struct Key;
-struct KvPair;
 struct OptionalValue;
 enum class Bound : ::std::uint8_t;
+namespace ffi {
+  struct KvPair;
+}
 namespace tikv_client_glue {
   struct TransactionClient;
   struct Transaction;
+  struct RawKVClient;
 }
 
 #ifndef CXXBRIDGE1_STRUCT_Key
@@ -590,15 +593,17 @@ struct Key final {
 };
 #endif // CXXBRIDGE1_STRUCT_Key
 
-#ifndef CXXBRIDGE1_STRUCT_KvPair
-#define CXXBRIDGE1_STRUCT_KvPair
+namespace ffi {
+#ifndef CXXBRIDGE1_STRUCT_ffi$KvPair
+#define CXXBRIDGE1_STRUCT_ffi$KvPair
 struct KvPair final {
   ::rust::Vec<::std::uint8_t> key;
   ::rust::Vec<::std::uint8_t> value;
 
   using IsRelocatable = ::std::true_type;
 };
-#endif // CXXBRIDGE1_STRUCT_KvPair
+#endif // CXXBRIDGE1_STRUCT_ffi$KvPair
+} // namespace ffi
 
 #ifndef CXXBRIDGE1_STRUCT_OptionalValue
 #define CXXBRIDGE1_STRUCT_OptionalValue
@@ -620,6 +625,20 @@ enum class Bound : ::std::uint8_t {
 #endif // CXXBRIDGE1_ENUM_Bound
 
 namespace tikv_client_glue {
+::rust::Box<::tikv_client_glue::RawKVClient> raw_client_new(const ::std::vector<::std::string> &pd_endpoints);
+
+::OptionalValue raw_get(const ::tikv_client_glue::RawKVClient &client, const ::std::string &key, ::std::uint32_t timeout_ms);
+
+void raw_put(const ::tikv_client_glue::RawKVClient &cli, const ::std::string &key, const ::std::string &val, ::std::uint32_t timeout_ms);
+
+::rust::Vec<::ffi::KvPair> raw_scan(const ::tikv_client_glue::RawKVClient &cli, const ::std::string &start, const ::std::string &end, ::std::uint32_t limit, ::std::uint32_t timeout_ms);
+
+void raw_delete(const ::tikv_client_glue::RawKVClient &cli, const ::std::string &key, ::std::uint32_t timeout_ms);
+
+void raw_delete_range(const ::tikv_client_glue::RawKVClient &cli, const ::std::string &startKey, const ::std::string &endKey, ::std::uint32_t timeout_ms);
+
+void raw_batch_put(const ::tikv_client_glue::RawKVClient &cli, const ::std::vector<::ffi::KvPair> &pairs, ::std::uint32_t timeout_ms);
+
 ::rust::Box<::tikv_client_glue::TransactionClient> transaction_client_new(const ::std::vector<::std::string> &pd_endpoints);
 
 ::rust::Box<::tikv_client_glue::Transaction> transaction_client_begin(const ::tikv_client_glue::TransactionClient &client);
@@ -630,11 +649,11 @@ namespace tikv_client_glue {
 
 ::OptionalValue transaction_get_for_update(::tikv_client_glue::Transaction &transaction, const ::std::string &key);
 
-::rust::Vec<::KvPair> transaction_batch_get(::tikv_client_glue::Transaction &transaction, const ::std::vector<::std::string> &keys);
+::rust::Vec<::ffi::KvPair> transaction_batch_get(::tikv_client_glue::Transaction &transaction, const ::std::vector<::std::string> &keys);
 
-::rust::Vec<::KvPair> transaction_batch_get_for_update(::tikv_client_glue::Transaction &transaction, const ::std::vector<::std::string> &keys);
+::rust::Vec<::ffi::KvPair> transaction_batch_get_for_update(::tikv_client_glue::Transaction &transaction, const ::std::vector<::std::string> &keys);
 
-::rust::Vec<::KvPair> transaction_scan(::tikv_client_glue::Transaction &transaction, const ::std::string &start, ::Bound start_bound, const ::std::string &end, ::Bound end_bound, ::std::uint32_t limit);
+::rust::Vec<::ffi::KvPair> transaction_scan(::tikv_client_glue::Transaction &transaction, const ::std::string &start, ::Bound start_bound, const ::std::string &end, ::Bound end_bound, ::std::uint32_t limit);
 
 ::rust::Vec<::Key> transaction_scan_keys(::tikv_client_glue::Transaction &transaction, const ::std::string &start, ::Bound start_bound, const ::std::string &end, ::Bound end_bound, ::std::uint32_t limit);
 
