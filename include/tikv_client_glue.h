@@ -627,17 +627,17 @@ enum class Bound : ::std::uint8_t {
 namespace tikv_client_glue {
 ::rust::Box<::tikv_client_glue::RawKVClient> raw_client_new(const ::std::vector<::std::string> &pd_endpoints);
 
-::OptionalValue raw_get(const ::tikv_client_glue::RawKVClient &client, const ::std::string &key, ::std::uint32_t timeout_ms);
+::OptionalValue raw_get(const ::tikv_client_glue::RawKVClient &client, const ::std::string &key, ::std::uint64_t timeout_ms);
 
-void raw_put(const ::tikv_client_glue::RawKVClient &cli, const ::std::string &key, const ::std::string &val, ::std::uint32_t timeout_ms);
+void raw_put(const ::tikv_client_glue::RawKVClient &cli, const ::std::string &key, const ::std::string &val, ::std::uint64_t timeout_ms);
 
-::rust::Vec<::ffi::KvPair> raw_scan(const ::tikv_client_glue::RawKVClient &cli, const ::std::string &start, const ::std::string &end, ::std::uint32_t limit, ::std::uint32_t timeout_ms);
+::rust::Vec<::ffi::KvPair> raw_scan(const ::tikv_client_glue::RawKVClient &cli, const ::std::string &start, const ::std::string &end, ::std::uint32_t limit, ::std::uint64_t timeout_ms);
 
-void raw_delete(const ::tikv_client_glue::RawKVClient &cli, const ::std::string &key, ::std::uint32_t timeout_ms);
+void raw_delete(const ::tikv_client_glue::RawKVClient &cli, const ::std::string &key, ::std::uint64_t timeout_ms);
 
-void raw_delete_range(const ::tikv_client_glue::RawKVClient &cli, const ::std::string &startKey, const ::std::string &endKey, ::std::uint32_t timeout_ms);
+void raw_delete_range(const ::tikv_client_glue::RawKVClient &cli, const ::std::string &startKey, const ::std::string &endKey, ::std::uint64_t timeout_ms);
 
-void raw_batch_put(const ::tikv_client_glue::RawKVClient &cli, const ::std::vector<::ffi::KvPair> &pairs, ::std::uint32_t timeout_ms);
+void raw_batch_put(const ::tikv_client_glue::RawKVClient &cli, const ::std::vector<::ffi::KvPair> &pairs, ::std::uint64_t timeout_ms);
 
 ::rust::Box<::tikv_client_glue::TransactionClient> transaction_client_new(const ::std::vector<::std::string> &pd_endpoints);
 
