@@ -83,7 +83,7 @@ mod ffi {
             client: &TransactionClient,
         ) -> Result<Box<Transaction>>;
 
-        fn transaction_get(transaction: &Transaction, key: &CxxString) -> Result<OptionalValue>;
+        fn transaction_get(transaction: &mut Transaction, key: &CxxString) -> Result<OptionalValue>;
 
         fn transaction_get_for_update(
             transaction: &mut Transaction,
@@ -153,7 +153,7 @@ fn raw_client_new(pd_endpoints: &CxxVector<CxxString>) -> Result<Box<RawKVClient
         .collect::<std::result::Result<Vec<_>, _>>()?;
 
     Ok(Box::new(RawKVClient {
-        inner: block_on(tikv_client::RawClient::new(pd_endpoints))?,
+        inner: block_on(tikv_client::RawClient::new(pd_endpoints,None))?,
     }))
 }
 
@@ -166,7 +166,7 @@ fn transaction_client_new(pd_endpoints: &CxxVector<CxxString>) -> Result<Box<Tra
         .collect::<std::result::Result<Vec<_>, _>>()?;
 
     Ok(Box::new(TransactionClient {
-        inner: block_on(tikv_client::TransactionClient::new(pd_endpoints))?,
+        inner: block_on(tikv_client::TransactionClient::new(pd_endpoints,None))?,
     }))
 }
 
@@ -249,7 +249,7 @@ fn raw_batch_put(cli: &RawKVClient, pairs: &CxxVector<KvPair>, timeout_ms: u32) 
     Ok(())
 }
 
-fn transaction_get(transaction: &Transaction, key: &CxxString) -> Result<OptionalValue> {
+fn transaction_get(transaction: &mut Transaction, key: &CxxString) -> Result<OptionalValue> {
     match block_on(transaction.inner.get(key.as_bytes().to_vec()))? {
         Some(value) => Ok(OptionalValue {
             is_none: false,
