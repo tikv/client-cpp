@@ -10,8 +10,13 @@ crate-type = ["staticlib"]
 
 [dependencies]
 anyhow = "1"
-cxx = "=1.0.18"
+cxx = "1.0.18"
 futures = "0.3"
 env_logger = "0.8"
 tokio = { version = "1.28.2", features = ["full"] }
-tikv-client = { git = "https://github.com/tikv/client-rust.git", rev = "3fad149" }
+tikv-client = { git = "https://github.com/tikv/client-rust.git", rev = "8875c96" }
+
+[patch.crates-io]
+raft-proto = { git = "https://github.com/tikv/raft-rs", rev="95c532612ee6a83591fce9a8b51d6afe87b58835"}
+protobuf-codegen = { git = "https://github.com/pingcap/rust-protobuf", rev="82b49fea7e696fd647b5aca0a6c6ec944eab3189" }
+protobuf = { git = "https://github.com/pingcap/rust-protobuf", rev="82b49fea7e696fd647b5aca0a6c6ec944eab3189" }
