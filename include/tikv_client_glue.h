@@ -645,7 +645,7 @@ void raw_batch_put(const ::tikv_client_glue::RawKVClient &cli, const ::std::vect
 
 ::rust::Box<::tikv_client_glue::Transaction> transaction_client_begin_pessimistic(const ::tikv_client_glue::TransactionClient &client);
 
-::OptionalValue transaction_get(const ::tikv_client_glue::Transaction &transaction, const ::std::string &key);
+::OptionalValue transaction_get(::tikv_client_glue::Transaction &transaction, const ::std::string &key);
 
 ::OptionalValue transaction_get_for_update(::tikv_client_glue::Transaction &transaction, const ::std::string &key);
 
