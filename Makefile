@@ -1,7 +1,7 @@
 pes_parent_dir:=$(shell pwd)/$(lastword $(MAKEFILE_LIST))
 cur_makefile_path := $(shell dirname $(pes_parent_dir))
 
-all: build target/tikv-example
+all: build
 
 build: pre-build target/debug/libtikv_client.a
 
