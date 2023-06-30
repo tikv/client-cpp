@@ -31,7 +31,7 @@ TransactionClient::TransactionClient(const std::vector<std::string> &pd_endpoint
 RawKVClient::RawKVClient(const std::vector<std::string> &pd_endpoints):
     _client(tikv_client_glue::raw_client_new(pd_endpoints)) {}
 
-std::optional<std::string> RawKVClient::get(const std::string &key, const std::uint32_t timeout) {
+std::optional<std::string> RawKVClient::get(const std::string &key, const std::uint64_t timeout) {
     auto val = tikv_client_glue::raw_get(*_client,key,timeout);
     if (val.is_none) {
         return std::nullopt;
@@ -40,11 +40,11 @@ std::optional<std::string> RawKVClient::get(const std::string &key, const std::u
     }
 }
 
-void RawKVClient::put(const std::string &key, const std::string &value, const std::uint32_t timeout) {
+void RawKVClient::put(const std::string &key, const std::string &value, const std::uint64_t timeout) {
     tikv_client_glue::raw_put(*_client,key,value,timeout);
 }
 
-void RawKVClient::batch_put(const std::vector<KvPair> &kv_pairs, const std::uint32_t timeout) {
+void RawKVClient::batch_put(const std::vector<KvPair> &kv_pairs, const std::uint64_t timeout) {
     std::vector<ffi::KvPair> pairs;
     pairs.reserve(kv_pairs.size());
     for (auto pair: kv_pairs) {
@@ -53,7 +53,7 @@ void RawKVClient::batch_put(const std::vector<KvPair> &kv_pairs, const std::uint
     tikv_client_glue::raw_batch_put(*_client,pairs,timeout);
 }
 
-std::vector<KvPair> RawKVClient::scan(const std::string &startKey, const std::string &endKey, std::uint32_t limit, const std::uint32_t timeout){
+std::vector<KvPair> RawKVClient::scan(const std::string &startKey, const std::string &endKey, std::uint32_t limit, const std::uint64_t timeout){
     auto kv_pairs = tikv_client_glue::raw_scan(*_client,startKey,endKey,limit,timeout);  
     std::vector<KvPair> result;
     result.reserve(kv_pairs.size());
@@ -66,11 +66,11 @@ std::vector<KvPair> RawKVClient::scan(const std::string &startKey, const std::st
     return result;
 }
 
-void RawKVClient::remove(const std::string &key, const std::uint32_t timeout) {
+void RawKVClient::remove(const std::string &key, const std::uint64_t timeout) {
     tikv_client_glue::raw_delete(*_client,key,timeout);
 }
 
-void RawKVClient::remove_range(const std::string &start_key,const std::string &end_key, const std::uint32_t timeout) {
+void RawKVClient::remove_range(const std::string &start_key,const std::string &end_key, const std::uint64_t timeout) {
     tikv_client_glue::raw_delete_range(*_client,start_key,end_key,timeout);
 }
 

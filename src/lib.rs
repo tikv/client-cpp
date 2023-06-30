@@ -6,6 +6,10 @@ use std::ops;
 use anyhow::Result;
 use cxx::{CxxString, CxxVector};
 use futures::executor::block_on;
+use tokio::{
+    runtime::Runtime,
+    time::{timeout, Duration},
+};
 
 use self::ffi::*;
 
@@ -40,14 +44,14 @@ mod ffi {
 
         fn raw_client_new(pd_endpoints: &CxxVector<CxxString>) -> Result<Box<RawKVClient>>;
 
-        fn raw_get(client: &RawKVClient, key: &CxxString, timeout_ms: u32)
+        fn raw_get(client: &RawKVClient, key: &CxxString, timeout_ms: u64)
             -> Result<OptionalValue>;
 
         fn raw_put(
             cli: &RawKVClient,
             key: &CxxString,
             val: &CxxString,
-            timeout_ms: u32,
+            timeout_ms: u64,
         ) -> Result<()>;
 
         fn raw_scan(
@@ -55,22 +59,22 @@ mod ffi {
             start: &CxxString,
             end: &CxxString,
             limit: u32,
-            timeout_ms: u32,
+            timeout_ms: u64,
         ) -> Result<Vec<KvPair>>;
 
-        fn raw_delete(cli: &RawKVClient, key: &CxxString, timeout_ms: u32) -> Result<()>;
+        fn raw_delete(cli: &RawKVClient, key: &CxxString, timeout_ms: u64) -> Result<()>;
 
         fn raw_delete_range(
             cli: &RawKVClient,
             startKey: &CxxString,
             endKey: &CxxString,
-            timeout_ms: u32,
+            timeout_ms: u64,
         ) -> Result<()>;
 
         fn raw_batch_put(
             cli: &RawKVClient,
             pairs: &CxxVector<KvPair>,
-            timeout_ms: u32,
+            timeout_ms: u64,
         ) -> Result<()>;
 
         fn transaction_client_new(
@@ -83,7 +87,8 @@ mod ffi {
             client: &TransactionClient,
         ) -> Result<Box<Transaction>>;
 
-        fn transaction_get(transaction: &mut Transaction, key: &CxxString) -> Result<OptionalValue>;
+        fn transaction_get(transaction: &mut Transaction, key: &CxxString)
+            -> Result<OptionalValue>;
 
         fn transaction_get_for_update(
             transaction: &mut Transaction,
@@ -136,6 +141,7 @@ struct TransactionClient {
 }
 
 struct RawKVClient {
+    pub rt: tokio::runtime::Runtime,
     inner: tikv_client::RawClient,
 }
 
@@ -146,6 +152,7 @@ struct Transaction {
 
 fn raw_client_new(pd_endpoints: &CxxVector<CxxString>) -> Result<Box<RawKVClient>> {
     env_logger::init();
+    let runtime = Runtime::new().unwrap();
 
     let pd_endpoints = pd_endpoints
         .iter()
@@ -153,7 +160,8 @@ fn raw_client_new(pd_endpoints: &CxxVector<CxxString>) -> Result<Box<RawKVClient
         .collect::<std::result::Result<Vec<_>, _>>()?;
 
     Ok(Box::new(RawKVClient {
-        inner: block_on(tikv_client::RawClient::new(pd_endpoints,None))?,
+        rt: runtime,
+        inner: block_on(tikv_client::RawClient::new(pd_endpoints, None))?,
     }))
 }
 
@@ -166,7 +174,7 @@ fn transaction_client_new(pd_endpoints: &CxxVector<CxxString>) -> Result<Box<Tra
         .collect::<std::result::Result<Vec<_>, _>>()?;
 
     Ok(Box::new(TransactionClient {
-        inner: block_on(tikv_client::TransactionClient::new(pd_endpoints,None))?,
+        inner: block_on(tikv_client::TransactionClient::new(pd_endpoints, None))?,
     }))
 }
 
@@ -182,26 +190,36 @@ fn transaction_client_begin_pessimistic(client: &TransactionClient) -> Result<Bo
     }))
 }
 
-fn raw_get(cli: &RawKVClient, key: &CxxString, timeout_ms: u32) -> Result<OptionalValue> {
-    match block_on(cli.inner.get(key.as_bytes().to_vec()))? {
-        Some(value) => Ok(OptionalValue {
-            is_none: false,
-            value,
-        }),
-        None => Ok(OptionalValue {
-            is_none: true,
-            value: Vec::new(),
-        }),
-    }
+fn raw_get(cli: &RawKVClient, key: &CxxString, timeout_ms: u64) -> Result<OptionalValue> {
+    cli.rt.block_on(async {
+        let result = timeout(
+            Duration::from_millis(timeout_ms),
+            cli.inner.get(key.as_bytes().to_vec()),
+        )
+        .await??;
+        match result {
+            Some(value) => Ok(OptionalValue {
+                is_none: false,
+                value,
+            }),
+            None => Ok(OptionalValue {
+                is_none: true,
+                value: Vec::new(),
+            }),
+        }
+    })
 }
 
-// TODO(smityz): implement timeout
-fn raw_put(cli: &RawKVClient, key: &CxxString, val: &CxxString, timeout_ms: u32) -> Result<()> {
-    block_on(
-        cli.inner
-            .put(key.as_bytes().to_vec(), val.as_bytes().to_vec()),
-    )?;
-    Ok(())
+fn raw_put(cli: &RawKVClient, key: &CxxString, val: &CxxString, timeout_ms: u64) -> Result<()> {
+    cli.rt.block_on(async {
+        timeout(
+            Duration::from_millis(timeout_ms),
+            cli.inner
+                .put(key.as_bytes().to_vec(), val.as_bytes().to_vec()),
+        )
+        .await??;
+        Ok(())
+    })
 }
 
 fn raw_scan(
@@ -209,44 +227,66 @@ fn raw_scan(
     start: &CxxString,
     end: &CxxString,
     limit: u32,
-    timeout_ms: u32,
+    timeout_ms: u64,
 ) -> Result<Vec<KvPair>> {
-    let rg = to_bound_range(start, Bound::Included, end, Bound::Excluded);
-    let pairs = block_on(cli.inner.scan(rg, limit))?
-        .into_iter()
-        .map(|tikv_client::KvPair(key, value)| KvPair {
-            key: key.into(),
-            value,
-        })
-        .collect();
-    Ok(pairs)
+    cli.rt.block_on(async {
+        let rg = to_bound_range(start, Bound::Included, end, Bound::Excluded);
+        let result =
+            timeout(Duration::from_millis(timeout_ms), cli.inner.scan(rg, limit)).await??;
+        let pairs = result
+            .into_iter()
+            .map(|tikv_client::KvPair(key, value)| KvPair {
+                key: key.into(),
+                value,
+            })
+            .collect();
+        Ok(pairs)
+    })
 }
 
-fn raw_delete(cli: &RawKVClient, key: &CxxString, timeout_ms: u32) -> Result<()> {
-    block_on(cli.inner.delete(key.as_bytes().to_vec()))?;
-    Ok(())
+fn raw_delete(cli: &RawKVClient, key: &CxxString, timeout_ms: u64) -> Result<()> {
+    cli.rt.block_on(async {
+        timeout(
+            Duration::from_millis(timeout_ms),
+            cli.inner.delete(key.as_bytes().to_vec()),
+        )
+        .await??;
+        Ok(())
+    })
 }
 
 fn raw_delete_range(
     cli: &RawKVClient,
     start_key: &CxxString,
     end_key: &CxxString,
-    timeout_ms: u32,
+    timeout_ms: u64,
 ) -> Result<()> {
-    let rg = to_bound_range(start_key, Bound::Included, end_key, Bound::Excluded);
-    block_on(cli.inner.delete_range(rg))?;
-    Ok(())
+    cli.rt.block_on(async {
+        let rg = to_bound_range(start_key, Bound::Included, end_key, Bound::Excluded);
+        timeout(
+            Duration::from_millis(timeout_ms),
+            cli.inner.delete_range(rg),
+        )
+        .await??;
+        Ok(())
+    })
 }
 
-fn raw_batch_put(cli: &RawKVClient, pairs: &CxxVector<KvPair>, timeout_ms: u32) -> Result<()> {
-    let tikv_pairs: Vec<tikv_client::KvPair> = pairs
-        .iter()
-        .map(|KvPair { key, value }| -> tikv_client::KvPair {
-            tikv_client::KvPair(key.to_vec().into(), value.to_vec())
-        })
-        .collect();
-    block_on(cli.inner.batch_put(tikv_pairs))?;
-    Ok(())
+fn raw_batch_put(cli: &RawKVClient, pairs: &CxxVector<KvPair>, timeout_ms: u64) -> Result<()> {
+    cli.rt.block_on(async {
+        let tikv_pairs: Vec<tikv_client::KvPair> = pairs
+            .iter()
+            .map(|KvPair { key, value }| -> tikv_client::KvPair {
+                tikv_client::KvPair(key.to_vec().into(), value.to_vec())
+            })
+            .collect();
+        timeout(
+            Duration::from_millis(timeout_ms),
+            cli.inner.batch_put(tikv_pairs),
+        )
+        .await??;
+        Ok(())
+    })
 }
 
 fn transaction_get(transaction: &mut Transaction, key: &CxxString) -> Result<OptionalValue> {
