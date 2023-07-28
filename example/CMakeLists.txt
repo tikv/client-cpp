@@ -7,7 +7,7 @@ set (CMAKE_CXX_STANDARD 17)
 # set(EXTERNAL_INSTALL_LOCATION ${CMAKE_BINARY_DIR}/external)
 # ExternalProject_Add(tikv
 #     GIT_REPOSITORY https://github.com/Smityz/client-cpp.git
-#     GIT_TAG cmake-2
+#     GIT_TAG cmake
 #     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${EXTERNAL_INSTALL_LOCATION}
 # )
 # include_directories(${EXTERNAL_INSTALL_LOCATION}/include)
