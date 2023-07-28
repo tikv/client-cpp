@@ -7,29 +7,30 @@ It's built on top of
 
 This client is still in the stage of prove-of-concept and under heavy development.
 
+## Prepare 
+
+```bash
+# install rust environment
+curl https://sh.rustup.rs -sSf | sh
+```
+
 ## Build
 
 ```bash
-# cxxbridge-cmd 1.0.18 requires rustc 1.48+ and c++17 or newer
-cargo install cxxbridge-cmd --force --version 1.0.18
-make
+## compile in build directory
+cmake -S . -B build && cmake --build build
+## install to /usr/local
+sudo cmake --install build
 ```
 
-Then the library will be in `target/debug/libtikv_client.a`.
-
-Otherwise, you can build release version by the following. The library will be in
-`target/release/libtikv_client.a`.
-
-```bash
-make release
-```
 
 ## Run example
 
 ```bash
+# run with tikv-server
 tiup playground nightly
-# run rawkv example
-make run-raw-example
-# run txnkv example
-make run-txn-example        
+
+cd examples && cmake -S . -B build && cmake --build build
+# run raw example
+./build/raw
 ```
