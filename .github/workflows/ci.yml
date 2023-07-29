@@ -1,0 +1,20 @@
+on:
+  pull_request:
+    branches:
+      - master
+  push:
+    branches:
+      - master
+
+name: CI
+
+jobs:
+  build:
+    name: build 
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v1.4.0
+      - name: cmake build 
+        run: cmake -S . -B build && cmake --build build
