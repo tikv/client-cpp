@@ -3,7 +3,7 @@
 #ifndef _TIKV_CLIENT_H_
 #define _TIKV_CLIENT_H_ 
 
-#include "tikv_client_glue.h"
+#include "lib.rs.h"
 #include <iostream>
 #include <optional>
 

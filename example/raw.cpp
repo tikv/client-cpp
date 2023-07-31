@@ -1,7 +1,7 @@
 // Copyright 2021 TiKV Project Authors. Licensed under Apache-2.0.
 
-#include "tikv_client.h"
 #include <iostream>
+#include <tikv/tikv_client.h>
 
 int main() {
     auto client = tikv_client::RawKVClient({"127.0.0.1:2379"});
