@@ -1480,7 +1480,7 @@ dependencies = [
 [[package]]
 name = "tikv-client"
 version = "0.2.0"
-source = "git+https://github.com/tikv/client-rust.git?rev=8b3ada28#8b3ada28ee3bf9fe02d5a5468ab236a7ad9bb1c0"
+source = "git+https://github.com/tikv/client-rust.git?rev=abf22ba#abf22ba680f1b5bbdf8c716aa2d3ec03b6a3c146"
 dependencies = [
  "async-recursion",
  "async-trait",
