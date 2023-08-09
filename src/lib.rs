@@ -1,7 +1,7 @@
 // Copyright 2021 TiKV Project Authors. Licensed under Apache-2.0.
 
 use core::panic;
-use std::ops;
+use std::{ops, path::PathBuf};
 
 use anyhow::Result;
 use cxx::{CxxString, CxxVector};
@@ -36,6 +36,17 @@ mod ffi {
         Unbounded,
     }
 
+    struct config {
+        pub ca_path: String,
+        pub cert_path: String,
+        pub key_path: String,
+        pub timeout: u64,
+        pub tcp_keepalive: u64,
+        pub keep_alive_timeout: u64,
+        pub dns_server_addr: String,
+        pub dns_search_domain: Vec<String>,
+    }
+
     #[namespace = "tikv_client_glue"]
     extern "Rust" {
         type TransactionClient;
@@ -43,6 +54,11 @@ mod ffi {
         type RawKVClient;
 
         fn raw_client_new(pd_endpoints: &CxxVector<CxxString>) -> Result<Box<RawKVClient>>;
+
+        fn raw_client_config(
+            pd_endpoints: &CxxVector<CxxString>,
+            config: config,
+        ) -> Result<Box<RawKVClient>>;
 
         fn raw_get(client: &RawKVClient, key: &CxxString, timeout_ms: u64)
             -> Result<OptionalValue>;
@@ -148,6 +164,28 @@ struct RawKVClient {
 #[repr(transparent)]
 struct Transaction {
     inner: tikv_client::Transaction,
+}
+fn raw_client_config(
+    pd_endpoints: &CxxVector<CxxString>,
+    config: config,
+) -> Result<Box<RawKVClient>> {
+    env_logger::builder()
+        .filter_level(log::LevelFilter::Info)
+        .init();
+    let runtime = Runtime::new().unwrap();
+
+    let pd_endpoints = pd_endpoints
+        .iter()
+        .map(|str| str.to_str().map(ToOwned::to_owned))
+        .collect::<std::result::Result<Vec<_>, _>>()?;
+
+    Ok(Box::new(RawKVClient {
+        inner: runtime.block_on(tikv_client::RawClient::new_with_config(
+            pd_endpoints,
+            config.into(),
+        ))?,
+        rt: runtime,
+    }))
 }
 
 fn raw_client_new(pd_endpoints: &CxxVector<CxxString>) -> Result<Box<RawKVClient>> {
@@ -420,4 +458,77 @@ fn to_bound_range(
         _ => panic!("unexpected bound"),
     };
     tikv_client::BoundRange::from((start_bound, end_bound))
+}
+
+impl From<config> for tikv_client::Config {
+    fn from(config: config) -> Self {
+        let ca_path: Option<PathBuf>;
+        let cert_path: Option<PathBuf>;
+        let key_path: Option<PathBuf>;
+        let timeout: Duration;
+        let tcp_keepalive: Option<Duration>;
+        let keep_alive_timeout: Duration;
+        let dns_server_addr: Option<String>;
+        let dns_search_domain: Vec<String>;
+        let default_config = tikv_client::Config::default();
+
+        if config.ca_path.is_empty() {
+            ca_path = default_config.ca_path;
+        } else {
+            ca_path = Some(PathBuf::from(config.ca_path));
+        }
+
+        if config.cert_path.is_empty() {
+            cert_path = default_config.cert_path;
+        } else {
+            cert_path = Some(PathBuf::from(config.cert_path));
+        }
+
+        if config.key_path.is_empty() {
+            key_path = default_config.key_path;
+        } else {
+            key_path = Some(PathBuf::from(config.key_path));
+        }
+
+        if config.timeout == 0 {
+            timeout = default_config.timeout;
+        } else {
+            timeout = Duration::from_millis(config.timeout);
+        }
+
+        if config.tcp_keepalive == 0 {
+            tcp_keepalive = default_config.tcp_keepalive;
+        } else {
+            tcp_keepalive = Some(Duration::from_millis(config.tcp_keepalive));
+        }
+
+        if config.keep_alive_timeout == 0 {
+            keep_alive_timeout = default_config.keep_alive_timeout;
+        } else {
+            keep_alive_timeout = Duration::from_millis(config.keep_alive_timeout);
+        }
+
+        if config.dns_server_addr.is_empty() {
+            dns_server_addr = default_config.dns_server_addr;
+        } else {
+            dns_server_addr = Some(config.dns_server_addr);
+        }
+
+        if config.dns_search_domain.is_empty() {
+            dns_search_domain = default_config.dns_search_domain;
+        } else {
+            dns_search_domain = config.dns_search_domain;
+        }
+
+        tikv_client::Config {
+            ca_path,
+            cert_path,
+            key_path,
+            timeout,
+            tcp_keepalive,
+            keep_alive_timeout,
+            dns_server_addr,
+            dns_search_domain,
+        }
+    }
 }
