@@ -9,11 +9,14 @@ ExternalProject_Add(tikv
     SOURCE_DIR ${CMAKE_SOURCE_DIR}/../
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${EXTERNAL_INSTALL_LOCATION}
 )
+
 include_directories(${EXTERNAL_INSTALL_LOCATION}/include)
 link_directories(${EXTERNAL_INSTALL_LOCATION}/lib)
 
-
 add_executable(raw raw.cpp)
-target_link_libraries(raw tikvcpp tikvrust pthread dl ssl crypto)
 add_executable(txn txn.cpp)
+
+add_dependencies(raw tikv)
+add_dependencies(txn tikv)
+target_link_libraries(raw tikvcpp tikvrust pthread dl ssl crypto)
 target_link_libraries(txn tikvcpp tikvrust pthread dl ssl crypto)
