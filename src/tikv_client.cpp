@@ -7,6 +7,10 @@ using ::rust::cxxbridge1::Box;
 
 namespace tikv_client {
 
+void Logger::init() {
+    tikv_client_glue::init_logger();
+}
+
 KvPair::KvPair(std::string &&key, std::string &&value)
     : key(std::move(key))
     , value(std::move(value))
