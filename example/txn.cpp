@@ -4,7 +4,9 @@
 #include <tikv/tikv_client.h>
 
 int main() {
+    tikv_client::Logger::init();
     auto client = tikv_client::TransactionClient({"127.0.0.1:2379"});
+    auto client2 = tikv_client::TransactionClient({"127.0.0.1:2379"});
     auto txn = client.begin();
 
     txn.put("k1", "v2");

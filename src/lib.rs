@@ -41,6 +41,7 @@ mod ffi {
         type Transaction;
         type RawKVClient;
 
+        fn init_logger();
         fn raw_client_new(pd_endpoints: &CxxVector<CxxString>) -> Result<Box<RawKVClient>>;
 
         fn raw_get(client: &RawKVClient, key: &CxxString, timeout_ms: u64)
@@ -149,12 +150,14 @@ struct Transaction {
     inner: tikv_client::Transaction,
 }
 
-fn raw_client_new(pd_endpoints: &CxxVector<CxxString>) -> Result<Box<RawKVClient>> {
+fn init_logger() {
     env_logger::builder()
         .filter_level(log::LevelFilter::Info)
         .init();
-    let runtime = Runtime::new().unwrap();
+}
 
+fn raw_client_new(pd_endpoints: &CxxVector<CxxString>) -> Result<Box<RawKVClient>> {
+    let runtime = Runtime::new().unwrap();
     let pd_endpoints = pd_endpoints
         .iter()
         .map(|str| str.to_str().map(ToOwned::to_owned))
@@ -167,9 +170,7 @@ fn raw_client_new(pd_endpoints: &CxxVector<CxxString>) -> Result<Box<RawKVClient
 }
 
 fn transaction_client_new(pd_endpoints: &CxxVector<CxxString>) -> Result<Box<TransactionClient>> {
-    env_logger::init();
     let runtime = Runtime::new().unwrap();
-
     let pd_endpoints = pd_endpoints
         .iter()
         .map(|str| str.to_str().map(ToOwned::to_owned))
@@ -295,7 +296,10 @@ fn raw_batch_put(cli: &RawKVClient, pairs: &CxxVector<KvPair>, timeout_ms: u64) 
 }
 
 fn transaction_get(transaction: &mut Transaction, key: &CxxString) -> Result<OptionalValue> {
-    match transaction.rt.block_on(transaction.inner.get(key.as_bytes().to_vec()))? {
+    match transaction
+        .rt
+        .block_on(transaction.inner.get(key.as_bytes().to_vec()))?
+    {
         Some(value) => Ok(OptionalValue {
             is_none: false,
             value,
@@ -311,7 +315,10 @@ fn transaction_get_for_update(
     transaction: &mut Transaction,
     key: &CxxString,
 ) -> Result<OptionalValue> {
-    match transaction.rt.block_on(transaction.inner.get_for_update(key.as_bytes().to_vec()))? {
+    match transaction
+        .rt
+        .block_on(transaction.inner.get_for_update(key.as_bytes().to_vec()))?
+    {
         Some(value) => Ok(OptionalValue {
             is_none: false,
             value,
@@ -328,7 +335,9 @@ fn transaction_batch_get(
     keys: &CxxVector<CxxString>,
 ) -> Result<Vec<KvPair>> {
     let keys = keys.iter().map(|key| key.as_bytes().to_vec());
-    let kv_pairs = transaction.rt.block_on(transaction.inner.batch_get(keys))?
+    let kv_pairs = transaction
+        .rt
+        .block_on(transaction.inner.batch_get(keys))?
         .map(|tikv_client::KvPair(key, value)| KvPair {
             key: key.into(),
             value,
@@ -361,7 +370,9 @@ fn transaction_scan(
     limit: u32,
 ) -> Result<Vec<KvPair>> {
     let range = to_bound_range(start, start_bound, end, end_bound);
-    let kv_pairs = transaction.rt.block_on(transaction.inner.scan(range, limit))?
+    let kv_pairs = transaction
+        .rt
+        .block_on(transaction.inner.scan(range, limit))?
         .map(|tikv_client::KvPair(key, value)| KvPair {
             key: key.into(),
             value,
@@ -379,7 +390,9 @@ fn transaction_scan_keys(
     limit: u32,
 ) -> Result<Vec<Key>> {
     let range = to_bound_range(start, start_bound, end, end_bound);
-    let keys = transaction.rt.block_on(transaction.inner.scan_keys(range, limit))?
+    let keys = transaction
+        .rt
+        .block_on(transaction.inner.scan_keys(range, limit))?
         .map(|key| Key { key: key.into() })
         .collect();
     Ok(keys)
@@ -395,7 +408,9 @@ fn transaction_put(transaction: &mut Transaction, key: &CxxString, val: &CxxStri
 }
 
 fn transaction_delete(transaction: &mut Transaction, key: &CxxString) -> Result<()> {
-    transaction.rt.block_on(transaction.inner.delete(key.as_bytes().to_vec()))?;
+    transaction
+        .rt
+        .block_on(transaction.inner.delete(key.as_bytes().to_vec()))?;
     Ok(())
 }
 

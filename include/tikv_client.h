@@ -9,6 +9,10 @@
 
 namespace tikv_client {
 
+class Logger {
+public:
+    static void init();    
+};
 struct KvPair final {
     std::string key;
     std::string value;
